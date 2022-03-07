@@ -9,53 +9,51 @@
 #include "activations.h"
 
 
-void fc(float out[], float in[], float weight[FC_WEIGHTS_H][FC_WEIGHTS_W], float bias[FC_BIAS_SIZE])
-{
+void fc(float out[], float in[], float weight[FC_WEIGHTS_H][FC_WEIGHTS_W], float bias[FC_BIAS_SIZE]) {
     float read;
     float output[FC_ACT_SIZE] = {0};
-    for(int j = 0; j < FC_WEIGHTS_H; j++)
-    {
+    for (int j = 0; j < FC_WEIGHTS_H; j++) {
         read = in[j];
-        for(int i = 0; i < FC_WEIGHTS_W; i++)
-        {
+        for (int i = 0; i < FC_WEIGHTS_W; i++) {
             output[i] += weight[j][i] * read;
         }
     }
-    for(int i = 0; i < FC_WEIGHTS_W; i++)
+    for (int i = 0; i < FC_WEIGHTS_W; i++)
         out[i] = relu(output[i] + bias[i]);
 
 }
 
-void pool(float out[], float in[])
-{
-    int BUFFER_SIZE = (P_SIZE*P_CHANNELS);
+void pool(float out[], float in[]) {
+    int BUFFER_SIZE = (P_SIZE * P_CHANNELS);
 
-    int i,j,k,l,m;
+    int i, j, k, l, m;
     float read;
     float pool_buff[BUFFER_SIZE][1];
     int z = 0;
-    for(i = 0 ; i < P_SIZE; i++)
-        for(l = 0; l < P_KERNEL_SIZE; l++)
-        {
-            for(j = 0 ; j < P_SIZE; j++)
-                for(m = 0; m < P_KERNEL_SIZE; m++)
-                    for(k = 0 ; k < P_CHANNELS; k++)
-                    {
+    int out_index = 0;
+    for (i = 0; i < P_SIZE; i++)
+        for (l = 0; l < P_KERNEL_SIZE; l++) {
+            for (j = 0; j < P_SIZE; j++)
+                for (m = 0; m < P_KERNEL_SIZE; m++)
+                    for (k = 0; k < P_CHANNELS; k++) {
                         read = in[z];
                         z++;
-                        if(l == 0 && m == 0)
-                            pool_buff[j*P_CHANNELS + k][0] = read;
+                        if (l == 0 && m == 0)
+                            pool_buff[j * P_CHANNELS + k][0] = read;
 
                         else
-                            pool_buff[j*P_CHANNELS + k][0] = pool_buff[j*P_CHANNELS + k][0] > read? pool_buff[j*P_CHANNELS + k][0] : read;
+                            pool_buff[j * P_CHANNELS + k][0] =
+                                    pool_buff[j * P_CHANNELS + k][0] > read ? pool_buff[j * P_CHANNELS + k][0] : read;
 
 
-                        if(l == (P_KERNEL_SIZE - 1) && m == (P_KERNEL_SIZE - 1))
-                            out[z] = pool_buff[j*P_CHANNELS + k][0];
+                        if (l == (P_KERNEL_SIZE - 1) && m == (P_KERNEL_SIZE - 1)) {
+                            out[out_index] = pool_buff[j * P_CHANNELS + k][0];
+                            out_index++;
+                        }
 
                     }
-            for(int skip = P_SIZE * P_STRIDE ; skip < A_SIZE; skip++)
-                for(int channel = 0; channel < P_CHANNELS; channel++) {
+            for (int skip = P_SIZE * P_STRIDE; skip < A_SIZE; skip++)
+                for (int channel = 0; channel < P_CHANNELS; channel++) {
                     //in>>read;
                     z++;
                 }
@@ -72,10 +70,11 @@ void pool(float out[], float in[])
 }
 
 
-void conv(float out[], float in[], float weight[CONV_KERNEL_SIZE][CONV_KERNEL_SIZE][CONV_CHANNELS][CONV_FILTERS], float bias[CONV_BIAS_SIZE])
-{
-    int BUFFER_SIZE  = (IMAGE_SIZE * IMAGE_CHANNELS * (CONV_KERNEL_SIZE -1) + CONV_KERNEL_SIZE * IMAGE_CHANNELS);
-    int i,j,k,filter, contor = 0;
+void conv(float out[], const float in[], float weight[CONV_KERNEL_SIZE][CONV_KERNEL_SIZE][CONV_CHANNELS][CONV_FILTERS],
+          float bias[CONV_BIAS_SIZE]) {
+    int BUFFER_SIZE = (IMAGE_SIZE * IMAGE_CHANNELS * (CONV_KERNEL_SIZE - 1) + CONV_KERNEL_SIZE * IMAGE_CHANNELS);
+    BUFFER_SIZE =1024;
+    int i, j, k, filter, contor = 0;
     float sum, placeholder;
     int row_offset, col_offset, channel_offset;
     //float conv_buff[BUFFER_SIZE];
@@ -92,8 +91,7 @@ void conv(float out[], float in[], float weight[CONV_KERNEL_SIZE][CONV_KERNEL_SI
      * Read the initial buffer
      * */
 
-    for(i = 0; i < BUFFER_SIZE;i++)
-    {
+    for (i = 0; i < BUFFER_SIZE; i++) {
 //        attempted_reads1++;
 //        if(in.empty() == 1)
 //        {
@@ -103,69 +101,77 @@ void conv(float out[], float in[], float weight[CONV_KERNEL_SIZE][CONV_KERNEL_SI
 //        }
 //        else
 //        {
-            placeholder = in[z];
-            z++;
+        placeholder = in[z];
+        z++;
 
-            conv_buff.push_back(placeholder);
-            reads1++;
+        conv_buff.push_back(placeholder);
+        reads1++;
 //        }
     }
 
-    conv_label5:for(i = 0; i < (IMAGE_SIZE - CONV_KERNEL_SIZE + 1); i += CONV_STRIDE)
-    conv_label4:for(j = 0; j < (IMAGE_SIZE - CONV_KERNEL_SIZE + 1); j += CONV_STRIDE)
-{
+    int out_index = 0;
+    for (filter = 0; filter < CONV_FILTERS; filter++) {
+    conv_label5:
+    for (i = 0; i < (IMAGE_SIZE - CONV_KERNEL_SIZE + 1); i += CONV_STRIDE) {
+        conv_label4:
+        for (j = 0; j < (IMAGE_SIZE - CONV_KERNEL_SIZE + 1); j += CONV_STRIDE) {
 
 
-    conv_label3:for(filter = 0; filter < CONV_FILTERS; filter++)
-{
-    sum = 0;
-    conv_label2:for(row_offset = 0; row_offset <CONV_KERNEL_SIZE; row_offset++)
-    conv_label1:for(col_offset = 0; col_offset <CONV_KERNEL_SIZE; col_offset++)
-    conv_label0:for(channel_offset = 0; channel_offset < CONV_CHANNELS; channel_offset++)
-    sum += conv_buff[row_offset*IMAGE_SIZE * IMAGE_CHANNELS +  col_offset * IMAGE_CHANNELS + channel_offset] * weight[row_offset][col_offset][channel_offset][filter];
-    out[z] = relu(sum + bias[filter]);
-}
-
-    if((j + CONV_STRIDE < (IMAGE_SIZE - CONV_KERNEL_SIZE + 1)))
-        for(int p = 0 ; p<IMAGE_CHANNELS; p++)
-        {
-            attempted_reads3++;
-//            if(in.empty() == 1)
-//            {
-//#ifndef __SYNTHESIS__
-//                printf("\nInput stream is empty at \"Next element state\"");
-//#endif
-//            }
-//            else
-//            {
-                reads3++;
-                placeholder = in[z];
-                z++;
-                conv_buff.push_back(placeholder);
+            conv_label3:
+            for (filter = 0; filter < CONV_FILTERS; filter++) {
+                sum = 0;
+                conv_label2:
+                for (row_offset = 0; row_offset < CONV_KERNEL_SIZE; row_offset++)
+                    conv_label1:
+                    for (col_offset = 0; col_offset < CONV_KERNEL_SIZE; col_offset++)
+                        conv_label0:
+                        for (channel_offset = 0; channel_offset < CONV_CHANNELS; channel_offset++)
+                            sum += conv_buff[row_offset * IMAGE_SIZE * IMAGE_CHANNELS + col_offset * IMAGE_CHANNELS +
+                                             channel_offset] * weight[row_offset][col_offset][channel_offset][filter];
+                out[out_index] = relu(sum + bias[filter]);
+                out_index++;
             }
-//        }
-//    else
-    if((i + CONV_STRIDE < (IMAGE_SIZE - CONV_KERNEL_SIZE + 1)) && (j + CONV_STRIDE >= (IMAGE_SIZE - CONV_KERNEL_SIZE + 1)))
-        for(int p = 0 ; p<CONV_KERNEL_SIZE * IMAGE_CHANNELS; p++)
-        {
-            attempted_reads2++;
-//            if(in.empty() == 1)
-//            {
-//#ifndef __SYNTHESIS__
-//                printf("\nInput stream is empty at \"Endline\"");
-//#endif
-//            }
-//            else
-//            {
-                reads2++;
-                placeholder = in[z];
-                z++;
-                conv_buff.push_back(placeholder);
-//            }
-        }
+//
+//            if ((j + CONV_STRIDE < (IMAGE_SIZE - CONV_KERNEL_SIZE + 1)))
+//                for (int p = 0; p < IMAGE_CHANNELS; p++) {
+//                    attempted_reads3++;
+////            if(in.empty() == 1)
+////            {
+////#ifndef __SYNTHESIS__
+////                printf("\nInput stream is empty at \"Next element state\"");
+////#endif
+////            }
+////            else
+////            {
+//                    reads3++;
+//                    placeholder = in[z];
+//                    z++;
+//                    conv_buff.push_back(placeholder);
+//                }
+////        }
+//        else
+//            if ((i + CONV_STRIDE < (IMAGE_SIZE - CONV_KERNEL_SIZE + 1)) &&
+//                (j + CONV_STRIDE >= (IMAGE_SIZE - CONV_KERNEL_SIZE + 1)))
+//                for (int p = 0; p < CONV_KERNEL_SIZE * IMAGE_CHANNELS; p++) {
+//                    attempted_reads2++;
+////            if(in.empty() == 1)
+////            {
+////#ifndef __SYNTHESIS__
+////                printf("\nInput stream is empty at \"Endline\"");
+////#endif
+////            }
+////            else
+////            {
+//                    reads2++;
+//                    placeholder = in[z];
+//                    z++;
+//                    conv_buff.push_back(placeholder);
+////            }
+//                }
 
 
-}
+        };
+    }
 #ifndef __SYNTHESIS__
     printf("\n===========");
     printf("\nStatistics:");
@@ -177,7 +183,6 @@ void conv(float out[], float in[], float weight[CONV_KERNEL_SIZE][CONV_KERNEL_SI
 #endif
 
 }
-
 
 
 #endif //CNN_XILINX_LAYERS_H
