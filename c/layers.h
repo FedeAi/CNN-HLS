@@ -18,8 +18,13 @@ void fc(float out[], float in[], float weight[FC_WEIGHTS_H][FC_WEIGHTS_W], float
             output[i] += weight[j][i] * read;
         }
     }
-    for (int i = 0; i < FC_WEIGHTS_W; i++)
-        out[i] = relu(output[i] + bias[i]);
+    for (int i = 0; i < FC_WEIGHTS_W; i++){
+        //out[i] = relu(output[i] + bias[i]);
+        out[i] = output[i] + bias[i]; // softmax implementation
+
+    }
+
+    softmax(out, FC_ACT_SIZE);
 
 }
 
@@ -57,6 +62,7 @@ void pool(float out[], float in[]) {
                     //in>>read;
                     z++;
                 }
+            //z = 0; // buffer reset
         }
 
 
@@ -70,10 +76,10 @@ void pool(float out[], float in[]) {
 }
 
 
-void conv(float out[], const float in[], float weight[CONV_KERNEL_SIZE][CONV_KERNEL_SIZE][CONV_CHANNELS][CONV_FILTERS],
+void conv(float out[], const float in[], const float weight[CONV_KERNEL_SIZE][CONV_KERNEL_SIZE][CONV_CHANNELS][CONV_FILTERS],
           float bias[CONV_BIAS_SIZE]) {
     int BUFFER_SIZE = (IMAGE_SIZE * IMAGE_CHANNELS * (CONV_KERNEL_SIZE - 1) + CONV_KERNEL_SIZE * IMAGE_CHANNELS);
-    BUFFER_SIZE =1024;
+    BUFFER_SIZE =IMAGE_SIZE * IMAGE_SIZE * IMAGE_CHANNELS;
     int i, j, k, filter, contor = 0;
     float sum, placeholder;
     int row_offset, col_offset, channel_offset;
@@ -110,27 +116,29 @@ void conv(float out[], const float in[], float weight[CONV_KERNEL_SIZE][CONV_KER
     }
 
     int out_index = 0;
-    for (filter = 0; filter < CONV_FILTERS; filter++) {
-    conv_label5:
-    for (i = 0; i < (IMAGE_SIZE - CONV_KERNEL_SIZE + 1); i += CONV_STRIDE) {
-        conv_label4:
-        for (j = 0; j < (IMAGE_SIZE - CONV_KERNEL_SIZE + 1); j += CONV_STRIDE) {
+        conv_label5:
+        for (i = 0; i < (IMAGE_SIZE - CONV_KERNEL_SIZE + 1); i += CONV_STRIDE) {
+            conv_label4:
+            for (j = 0; j < (IMAGE_SIZE - CONV_KERNEL_SIZE + 1); j += CONV_STRIDE) {
 
 
-            conv_label3:
-            for (filter = 0; filter < CONV_FILTERS; filter++) {
-                sum = 0;
-                conv_label2:
-                for (row_offset = 0; row_offset < CONV_KERNEL_SIZE; row_offset++)
-                    conv_label1:
-                    for (col_offset = 0; col_offset < CONV_KERNEL_SIZE; col_offset++)
-                        conv_label0:
-                        for (channel_offset = 0; channel_offset < CONV_CHANNELS; channel_offset++)
-                            sum += conv_buff[row_offset * IMAGE_SIZE * IMAGE_CHANNELS + col_offset * IMAGE_CHANNELS +
-                                             channel_offset] * weight[row_offset][col_offset][channel_offset][filter];
-                out[out_index] = relu(sum + bias[filter]);
-                out_index++;
-            }
+                conv_label3:
+                for (filter = 0; filter < CONV_FILTERS; filter++) {
+                    sum = 0;
+                    conv_label2:
+                    for (row_offset = 0; row_offset < CONV_KERNEL_SIZE; row_offset++)
+                        conv_label1:
+                        for (col_offset = 0; col_offset < CONV_KERNEL_SIZE; col_offset++)
+                            conv_label0:
+                            for (channel_offset = 0; channel_offset < CONV_CHANNELS; channel_offset++)
+                                sum += conv_buff[row_offset * IMAGE_SIZE * IMAGE_CHANNELS +
+                                                 col_offset * IMAGE_CHANNELS +
+                                                 channel_offset
+                                                 + i*(IMAGE_SIZE) + j] *
+                                       weight[row_offset][col_offset][channel_offset][filter];
+                    out[out_index] = relu(sum + bias[filter]);
+                    out_index++;
+                }
 //
 //            if ((j + CONV_STRIDE < (IMAGE_SIZE - CONV_KERNEL_SIZE + 1)))
 //                for (int p = 0; p < IMAGE_CHANNELS; p++) {
@@ -170,7 +178,8 @@ void conv(float out[], const float in[], float weight[CONV_KERNEL_SIZE][CONV_KER
 //                }
 
 
-        };
+            };
+
     }
 #ifndef __SYNTHESIS__
     printf("\n===========");
