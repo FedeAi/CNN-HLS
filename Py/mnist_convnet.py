@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #------------------------------------------------------------------------------
-#-- Federico Sarrocco: 10696136, Alessandro Vacca: 10699452, Davide Preatoni --
+#-- Federico Sarrocco, Alessandro Vacca, Davide Preatoni                     --
 #-- Data: 28/02/2022                                                         --
 #------------------------------------------------------------------------------
 
