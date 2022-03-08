@@ -181,15 +181,15 @@ void conv(float out[], const float in[], const float weight[CONV_KERNEL_SIZE][CO
             };
 
     }
-#ifndef __SYNTHESIS__
-    printf("\n===========");
-    printf("\nStatistics:");
-    printf("\n===========");
-
-    printf("\nInitial buffer atempted to read %d and succeeded %d", attempted_reads1, reads1);
-    printf("\nEndline buffer atempted to read %d and succeeded %d", attempted_reads2, reads2);
-    printf("\nNextelm buffer atempted to read %d and succeeded %d", attempted_reads3, reads3);
-#endif
+//#ifndef __SYNTHESIS__
+//    printf("\n===========");
+//    printf("\nStatistics:");
+//    printf("\n===========");
+//
+//    printf("\nInitial buffer atempted to read %d and succeeded %d", attempted_reads1, reads1);
+//    printf("\nEndline buffer atempted to read %d and succeeded %d", attempted_reads2, reads2);
+//    printf("\nNextelm buffer atempted to read %d and succeeded %d", attempted_reads3, reads3);
+//#endif
 
 }
 
